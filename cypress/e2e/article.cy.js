@@ -1,24 +1,21 @@
-function generateUser() {
+const generateUser = () => {
   const id = Math.random().toString(36).substring(2, 10);
   const userName = `test_user_${id}`;
-  const email = `${userName}@mail.com`;
 
-  return { userName, email, password: 'Test1234!' };
-}
-
-function generateArticleData(userName) {
-  const getText = (label) => `${userName} ${label}`;
   return {
-    title: getText('title'),
-    description: getText('description'),
-    body: getText('body')
+    userName,
+    email: `${userName}@mail.com`,
+    password: 'Test1234!'
   };
-}
+};
+
+const generateArticleData = (userName) => ({
+  title: `${userName} title`,
+  description: `${userName} description`,
+  body: `${userName} body`
+});
 
 describe('Article functionality', () => {
-  let userData;
-  let articleData;
-
   const selectors = {
     title: '[placeholder="Article Title"]',
     description: '[placeholder="What\'s this article about?"]',
@@ -28,6 +25,9 @@ describe('Article functionality', () => {
     globalFeedLink: '.nav-link',
     noArticlesMsg: '.article-preview'
   };
+
+  let userData;
+  let articleData;
 
   beforeEach(() => {
     userData = generateUser();
@@ -53,10 +53,15 @@ describe('Article functionality', () => {
       articleData.title,
       articleData.description,
       articleData.body
-    ).then((response) => {
-      const slug = response.body.article.slug;
-      cy.visit(`article/${slug}`);
-    });
+    ).then(
+      ({
+        body: {
+          article: { slug }
+        }
+      }) => {
+        cy.visit(`article/${slug}`);
+      }
+    );
 
     cy.contains(selectors.deleteBtn, 'Delete Article').click();
     cy.contains(selectors.globalFeedLink, 'Global Feed').should('be.visible');
