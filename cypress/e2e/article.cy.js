@@ -1,73 +1,28 @@
-const generateUser = () => {
-  const id = Math.random().toString(36).substring(2, 10);
-  const userName = `test_user_${id}`;
+const { faker } = require('@faker-js/faker');
 
-  return {
-    userName,
-    email: `${userName}@mail.com`,
-    password: 'Test1234!'
-  };
-};
+describe('Delete Article Flow', () => {
+  let user;
+  const title = faker.lorem.words(4);
+  const description = faker.lorem.sentence();
+  const body = faker.lorem.paragraphs(2);
 
-const generateArticleData = (userName) => ({
-  title: `${userName} title`,
-  description: `${userName} description`,
-  body: `${userName} body`
-});
+  before(() => {
+    cy.task('generateUser').then((newUser) => {
+      user = newUser;
 
-describe('Article functionality', () => {
-  const selectors = {
-    title: '[placeholder="Article Title"]',
-    description: '[placeholder="What\'s this article about?"]',
-    body: '[placeholder="Write your article (in markdown)"]',
-    publishBtn: '[type="button"]',
-    deleteBtn: '.btn',
-    globalFeedLink: '.nav-link',
-    noArticlesMsg: '.article-preview'
-  };
-
-  let userData;
-  let articleData;
-
-  beforeEach(() => {
-    userData = generateUser();
-    articleData = generateArticleData(userData.userName);
-
-    cy.login(userData.email, userData.userName, userData.password);
+      cy.login(user.email, user.username, user.password);
+      cy.createArticle(title, description, body);
+    });
   });
 
-  it('creates a new article', () => {
-    cy.visit('https://conduit.mate.academy/editor');
-
-    cy.get(selectors.title).type(articleData.title);
-    cy.get(selectors.description).type(articleData.description);
-    cy.get(selectors.body).type(articleData.body);
-    cy.get(selectors.publishBtn).click();
-
-    cy.get('h1').should('contain.text', articleData.title);
-    cy.get('div > p').should('contain.text', articleData.body);
-  });
-
-  it('deletes the article', () => {
-    cy.createArticle(
-      articleData.title,
-      articleData.description,
-      articleData.body
-    ).then(
-      ({
-        body: {
-          article: { slug }
-        }
-      }) => {
-        cy.visit(`article/${slug}`);
-      }
-    );
-
-    cy.contains(selectors.deleteBtn, 'Delete Article').click();
-    cy.contains(selectors.globalFeedLink, 'Global Feed').should('be.visible');
-    cy.get(selectors.noArticlesMsg).should(
-      'contain.text',
-      'No articles are here... yet.'
-    );
+  it('should create and delete the article', () => {
+    cy.visit('/');
+    cy.contains(user.username.toLowerCase()).click();
+    cy.contains(title).click();
+    cy.contains('Delete Article').click();
+    cy.url().should('eq', `${Cypress.config().baseUrl}`);
+    cy.contains(user.username.toLowerCase()).click();
+    cy.reload();
+    cy.contains(title).should('not.exist');
   });
 });
